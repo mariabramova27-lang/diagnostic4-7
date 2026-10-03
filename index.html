@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мягкая математика — Тайна Живого Лабиринта</title>
+<style>
+  :root{
+    --turquoise:#2AB7A9;
+    --gold:#F4A261;
+    --dark:#0F1A2E;
+    --white:#FFFFFF;
+    --gray:#8AA8A5;
+    --ok:#3ecf8e;
+    --err:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Open Sans', 'Segoe UI', system-ui, sans-serif;
+    background:radial-gradient(circle at 20% 10%, #1b2b4a 0%, var(--dark) 60%);
+    color:var(--white);
+    min-height:100vh;
+    padding:20px;
+    line-height:1.5;
+  }
+  h1,h2,h3{font-family:'Montserrat','Segoe UI',sans-serif;letter-spacing:.5px;}
+  .app{max-width:1100px;margin:0 auto;}
+
+  header.top{
+    display:flex;justify-content:space-between;align-items:center;
+    flex-wrap:wrap;gap:12px;margin-bottom:20px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .logo{
+    width:48px;height:48px;border-radius:14px;
+    background:linear-gradient(135deg,var(--turquoise),var(--gold));
+    display:flex;align-items:center;justify-content:center;font-size:24px;
+    box-shadow:0 6px 20px rgba(42,183,169,.4);
+  }
+  .brand h1{font-size:20px;}
+  .brand p{font-size:12px;color:var(--gray);}
+
+  .keys{display:flex;gap:8px;align-items:center;}
+  .key{
+    width:42px;height:42px;border-radius:12px;
+    background:rgba(255,255,255,.06);
+    border:2px dashed rgba(138,168,165,.4);
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;transition:.4s;
+  }
+  .key.earned{
+    background:linear-gradient(135deg,var(--gold),#ffce8a);
+    border:2px solid var(--gold);
+    color:var(--dark);
+    box-shadow:0 0 18px rgba(244,162,97,.7);
+    transform:scale(1.08);
+  }
+
+  .map{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:14px;margin-bottom:24px;
+  }
+  .gate{
+    background:rgba(255,255,255,.05);
+    border:2px solid rgba(138,168,165,.35);
+    border-radius:16px;padding:16px;text-align:center;cursor:pointer;
+    transition:.3s;position:relative;overflow:hidden;
+  }
+  .gate:hover{transform:translateY(-4px);border-color:var(--turquoise);}
+  .gate.locked{opacity:.35;cursor:not-allowed;filter:grayscale(.6);}
+  .gate.done{border-color:var(--gold);background:rgba(244,162,97,.12);}
+  .gate .emoji{font-size:32px;display:block;margin-bottom:6px;}
+  .gate .name{font-size:13px;font-weight:600;}
+  .gate .status{font-size:11px;color:var(--gray);margin-top:4px;}
+  .gate.done .status{color:var(--gold);}
+
+  .panel{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(138,168,165,.25);
+    border-radius:20px;padding:24px;
+    backdrop-filter:blur(8px);
+    animation:fade .4s ease;
+  }
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  .panel h2{color:var(--turquoise);margin-bottom:6px;font-size:22px;}
+  .panel .sub{color:var(--gray);font-size:13px;margin-bottom:18px;}
+
+  .btn{
+    background:linear-gradient(135deg,var(--turquoise),#38d0c0);
+    color:var(--dark);border:none;border-radius:12px;
+    padding:12px 22px;font-weight:700;font-size:15px;
+    cursor:pointer;transition:.2s;font-family:inherit;
+    box-shadow:0 4px 14px rgba(42,183,169,.4);
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(42,183,169,.55);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+  .btn.gold{background:linear-gradient(135deg,var(--gold),#ffb877);box-shadow:0 4px 14px rgba(244,162,97,.4);}
+  .btn.ghost{background:transparent;color:var(--white);border:1px solid rgba(138,168,165,.5);box-shadow:none;}
+
+  .q{margin-bottom:18px;padding:16px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(138,168,165,.2);}
+  .q .title{font-weight:600;margin-bottom:10px;font-size:15px;}
+  .q .expr{font-family:'Courier New',monospace;background:rgba(0,0,0,.25);padding:8px 12px;border-radius:8px;display:inline-block;margin-bottom:10px;font-size:16px;}
+  .opts{display:flex;flex-wrap:wrap;gap:8px;}
+  .opt{
+    background:rgba(255,255,255,.06);border:1px solid rgba(138,168,165,.3);
+    border-radius:10px;padding:10px 18px;cursor:pointer;transition:.2s;font-size:14px;
+  }
+  .opt:hover{background:rgba(42,183,169,.15);border-color:var(--turquoise);}
+  .opt.correct{background:rgba(62,207,142,.25);border-color:var(--ok);color:#bfffe0;}
+  .opt.wrong{background:rgba(255,107,107,.2);border-color:var(--err);color:#ffc9c9;}
+  .opt:disabled{cursor:default;}
+
+  .memo-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media(max-width:780px){.memo-wrap{grid-template-columns:1fr;}}
+  .memo-col h4{color:var(--gold);font-size:14px;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;}
+  .card{
+    background:rgba(255,255,255,.07);border:1px solid rgba(138,168,165,.35);
+    border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:grab;
+    transition:.2s;font-family:'Courier New',monospace;font-size:15px;
+    user-select:none;
+  }
+  .card:hover{border-color:var(--turquoise);background:rgba(42,183,169,.12);}
+  .card.dragging{opacity:.4;}
+  .card.matched{background:rgba(62,207,142,.2);border-color:var(--ok);cursor:default;color:#bfffe0;}
+  .dropzone{
+    min-height:48px;border:2px dashed rgba(138,168,165,.4);border-radius:12px;
+    padding:8px;transition:.2s;
+  }
+  .dropzone.over{border-color:var(--gold);background:rgba(244,162,97,.1);}
+  .dropzone.filled{border-style:solid;border-color:var(--ok);}
+
+  .sort-area{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;}
+  @media(max-width:780px){.sort-area{grid-template-columns:1fr;}}
+  .bucket{
+    background:rgba(255,255,255,.05);border:2px dashed rgba(138,168,165,.4);
+    border-radius:14px;padding:12px;min-height:160px;transition:.2s;
+  }
+  .bucket.over{border-color:var(--gold);background:rgba(244,162,97,.1);}
+  .bucket h5{text-align:center;font-size:13px;color:var(--gold);margin-bottom:10px;letter-spacing:.5px;}
+  .chip{
+    display:inline-block;background:rgba(255,255,255,.08);
+    border:1px solid rgba(138,168,165,.35);border-radius:10px;
+    padding:8px 14px;margin:4px;cursor:grab;font-family:'Courier New',monospace;
+    font-size:14px;transition:.2s;
+  }
+  .chip:hover{border-color:var(--turquoise);}
+  .chip.placed{background:rgba(62,207,142,.2);border-color:var(--ok);color:#bfffe0;}
+  .pool{display:flex;flex-wrap:wrap;gap:6px;padding:14px;background:rgba(0,0,0,.2);border-radius:14px;margin-bottom:14px;min-height:60px;}
+
+  .story{
+    background:linear-gradient(135deg,rgba(42,183,169,.12),rgba(244,162,97,.08));
+    border-left:4px solid var(--gold);border-radius:14px;padding:16px;margin-bottom:14px;
+  }
+  .story .fox{font-size:28px;margin-bottom:6px;}
+  .story p{font-size:15px;font-style:italic;}
+  .answer-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;}
+  input[type=text], input[type=number]{
+    background:rgba(0,0,0,.3);border:1px solid rgba(138,168,165,.4);
+    border-radius:10px;padding:10px 14px;color:var(--white);font-size:15px;
+    font-family:inherit;flex:1;min-width:140px;
+  }
+  input:focus{outline:none;border-color:var(--turquoise);}
+  .feedback{margin-top:8px;font-size:14px;font-weight:600;}
+  .feedback.ok{color:var(--ok);}
+  .feedback.err{color:var(--err);}
+
+  .geo-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center;}
+  @media(max-width:780px){.geo-wrap{grid-template-columns:1fr;}}
+  svg{width:100%;max-width:320px;height:auto;}
+
+  .dice-area{display:flex;gap:20px;flex-wrap:wrap;align-items:center;}
+  .die{
+    width:90px;height:90px;border-radius:20px;
+    background:linear-gradient(135deg,var(--white),#dfe9e7);
+    color:var(--dark);display:flex;align-items:center;justify-content:center;
+    font-size:44px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.4);
+    transition:.1s;
+  }
+  .die.rolling{animation:roll .6s ease;}
+  @keyframes roll{
+    0%{transform:rotate(0) scale(1)}
+    25%{transform:rotate(90deg) scale(1.1)}
+    50%{transform:rotate(180deg) scale(.95)}
+    75%{transform:rotate(270deg) scale(1.08)}
+    100%{transform:rotate(360deg) scale(1)}
+  }
+  .stats{display:flex;gap:24px;margin-top:16px;flex-wrap:wrap;}
+  .stat{background:rgba(255,255,255,.06);border-radius:12px;padding:12px 18px;min-width:110px;text-align:center;}
+  .stat .val{font-size:24px;font-weight:800;color:var(--gold);}
+  .stat .lbl{font-size:12px;color:var(--gray);}
+
+  .final{
+    text-align:center;padding:40px 20px;
+    background:linear-gradient(135deg,rgba(244,162,97,.15),rgba(42,183,169,.12));
+    border:2px solid var(--gold);border-radius:24px;
+    animation:fade .6s ease;
+  }
+  .final .trophy{font-size:72px;margin-bottom:12px;animation:pop .8s ease;}
+  @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+  .final h2{color:var(--gold);font-size:28px;margin-bottom:10px;}
+  .final p{color:var(--gray);margin-bottom:20px;}
+
+  .toast{
+    position:fixed;top:20px;right:20px;z-index:99;
+    background:linear-gradient(135deg,var(--gold),#ffce8a);color:var(--dark);
+    padding:14px 22px;border-radius:14px;font-weight:700;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+    animation:slideIn .4s ease;
+  }
+  @keyframes slideIn{from{transform:translateX(120%)}to{transform:translateX(0)}}
+
+  .progress-bar{
+    height:6px;background:rgba(255,255,255,.1);border-radius:6px;overflow:hidden;margin-bottom:18px;
+  }
+  .progress-bar .fill{
+    height:100%;background:linear-gradient(90deg,var(--turquoise),var(--gold));
+    width:0%;transition:width .5s ease;border-radius:6px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">🧙‍♂️</div>
+      <div>
+        <h1>Мягкая математика</h1>
+        <p>Тайна Живого Лабиринта · 8 класс</p>
+      </div>
+    </div>
+    <div class="keys">
+      <span style="font-size:13px;color:var(--gray)">Ключи:</span>
+      <div class="key" id="k1">🔑</div>
+      <div class="key" id="k2">🔑</div>
+      <div class="key" id="k3">🔑</div>
+      <div class="key" id="k4">🔑</div>
+      <div class="key" id="k5">🔑</div>
+      <div class="key" id="k6">🔑</div>
+    </div>
+  </header>
+
+  <div class="progress-bar"><div class="fill" id="progress"></div></div>
+
+  <div class="map" id="map"></div>
+
+  <div id="stage"></div>
+
+</div>
+
+<script>
+/* ============================================================
+   ДАННЫЕ: 6 врат
+   ============================================================ */
+const gates = [
+  {id:1, emoji:"🔢", name:"Пещера Знаков",       type:"quiz"},
+  {id:2, emoji:"🐉", name:"Мост Уравнений",      type:"memo"},
+  {id:3, emoji:"🌳", name:"Лес Степеней",        type:"sort"},
+  {id:4, emoji:"📖", name:"Долина Историй",      type:"text"},
+  {id:5, emoji:"🏔️", name:"Горы Геометрии",      type:"geo"},
+  {id:6, emoji:"🎲", name:"Озеро Вероятностей",  type:"dice"}
+];
+
+const state = {
+  earned: new Set(),
+  current: null
+};
+
+/* ============================================================
+   УТИЛИТЫ
+   ============================================================ */
+function toast(msg){
+  const t=document.createElement('div');
+  t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2200);
+}
+function unlockKey(id){
+  if(state.earned.has(id))return;
+  state.earned.add(id);
+  document.getElementById('k'+id).classList.add('earned');
+  const total=state.earned.size;
+  document.getElementById('progress').style.width=(total/6*100)+'%';
+  toast('🔑 Ключ получен!');
+  renderMap();
+  if(total===6) showFinal();
+}
+function renderMap(){
+  const map=document.getElementById('map');
+  map.innerHTML='';
+  gates.forEach((g,i)=>{
+    const done=state.earned.has(g.id);
+    const locked=i>0 && !state.earned.has(gates[i-1].id) && !done;
+    const el=document.createElement('div');
+    el.className='gate'+(done?' done':'')+(locked?' locked':'');
+    el.innerHTML=`
+      <span class="emoji">${g.emoji}</span>
+      <div class="name">Врата ${g.id}. ${g.name}</div>
+      <div class="status">${done?'✅ Пройдено':locked?'🔒 Закрыто':'▶ Открыто'}</div>
+    `;
+    if(!locked && !done) el.onclick=()=>openGate(g);
+    if(done) el.onclick=()=>openGate(g);
+    map.appendChild(el);
+  });
+}
+function openGate(g){
+  state.current=g;
+  document.getElementById('stage').innerHTML='';
+  if(g.type==='quiz') initQuiz();
+  if(g.type==='memo') initMemo();
+  if(g.type==='sort') initSort();
+  if(g.type==='text') initText();
+  if(g.type==='geo')  initGeo();
+  if(g.type==='dice') initDice();
+  window.scrollTo({top:300,behavior:'smooth'});
+}
+
+/* ============================================================
+   ВРАТА 1 — ВИКТОРИНА (арифметика)
+   ============================================================ */
+const quizData=[
+  {q:"-8 + 3 × (-2)", opts:["-14","-2","2","14"], correct:0},
+  {q:"-5 - (-12) + (-7)", opts:["0","-24","14","-14"], correct:0},
+  {q:"3/4 + 5/6", opts:["8/10","1 7/12","8/12","1 1/6"], correct:1},
+  {q:"7/8 - 2/3", opts:["5/5","5/24","21/24","1/24"], correct:1},
+  {q:"2 1/3 × 1 1/2", opts:["3 1/2","2 1/6","3 1/6","3 5/6"], correct:0},
+  {q:"4/5 ÷ 2/15", opts:["8/75","6","1/6","2/3"], correct:1},
+  {q:"0,75 + 1/4", opts:["0,5","1","0,9","1,25"], correct:1},
+  {q:"1,2 × (-0,5)", opts:["-0,6","0,6","-6","0,06"], correct:0},
+  {q:"3,6 ÷ 0,4", opts:["0,9","9","90","0,09"], correct:1},
+  {q:"2/3 + 0,5 - 1/6", opts:["1","1/2","5/6","1 1/6"], correct:0}
+];
+
+function initQuiz(){
+  const stage=document.getElementById('stage');
+  let answered=0, correct=0;
+  stage.innerHTML=`
+    <div class="panel">
+      <h2>🔢 Врата 1. Пещера Знаков</h2>
+      <p class="sub">Считарик приветствует тебя! Летучие мыши перепутали все вычисления. Ответь верно — и пещера откроется.</p>
+      <div id="quizList"></div>
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <span id="quizScore" style="color:var(--gray)">Верно: 0 / 10</span>
+        <button class="btn ghost" id="quizReset">Сбросить</button>
+      </div>
+    </div>
+  `;
+  const list=document.getElementById('quizList');
+  function build(){
+    list.innerHTML='';
+    answered=0;correct=0;
+    document.getElementById('quizScore').textContent='Верно: 0 / 10';
+    quizData.forEach((item,idx)=>{
+      const div=document.createElement('div');
+      div.className='q';
+      div.innerHTML=`
+        <div class="title">Задание ${idx+1}</div>
+        <div class="expr">${item.q}</div>
+        <div class="opts"></div>
+      `;
+      const opts=div.querySelector('.opts');
+      item.opts.forEach((o,oi)=>{
+        const b=document.createElement('button');
+        b.className='opt';b.textContent=o;
+        b.onclick=()=>{
+          if(div.dataset.done)return;
+          div.dataset.done='1';
+          [...opts.children].forEach(x=>x.disabled=true);
+          if(oi===item.correct){b.classList.add('correct');correct++;}
+          else{
+            b.classList.add('wrong');
+            opts.children[item.correct].classList.add('correct');
+          }
+          answered++;
+          document.getElementById('quizScore').textContent=`Верно: ${correct} / 10`;
+          if(answered===quizData.length){
+            if(correct>=7) unlockKey(1);
+            else toast('Попробуй ещё — нужно 7 верных!');
+          }
+        };
+        opts.appendChild(b);
+      });
+      list.appendChild(div);
+    });
+  }
+  build();
+  document.getElementById('quizReset').onclick=build;
+}
+
+/* ============================================================
+   ВРАТА 2 — МЕМО / DRAG-AND-DROP (уравнения)
+   ============================================================ */
+const memoPairs=[
+  {id:'a', eq:'3x - 7 = 2x + 5', sol:'x = 12'},
+  {id:'b', eq:'x/2 - x/5 = 3',   sol:'x = 10'},
+  {id:'c', eq:'2(x - 3) = 5x + 9', sol:'x = -5'},
+  {id:'d', eq:'5/x = 2/(x-1)',   sol:'x = 5/3'},
+  {id:'e', eq:'4 - x/2 = 1',     sol:'x = 6'}
+];
+
+function initMemo(){
+  const stage=document.getElementById('stage');
+  stage.innerHTML=`
+    <div class="panel">
+      <h2>🐉 Врата 2. Мост Уравнений</h2>
+      <p class="sub">Дракон Деления охраняет мост. Перетащи решение к каждому уравнению. Верно — доска держится!</p>
+      <div class="memo-wrap">
+        <div class="memo-col">
+          <h4>Уравнения</h4>
+          <div id="eqCol"></div>
+        </div>
+        <div class="memo-col">
+          <h4>Решения (перетащи)</h4>
+          <div id="solCol"></div>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <span id="memoScore" style="color:var(--gray)">Собрано: 0 / 5</span>
+      </div>
+    </div>
+  `;
+  const eqCol=document.getElementById('eqCol');
+  const solCol=document.getElementById('solCol');
+  let matched=0;
+
+  memoPairs.forEach(p=>{
+    const zone=document.createElement('div');
+    zone.className='dropzone';
+    zone.dataset.answer=p.id;
+    zone.innerHTML=`<div class="card" style="cursor:default;margin:0">${p.eq}</div>`;
+    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('over');});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('over'));
+    zone.addEventListener('drop',e=>{
+      e.preventDefault();zone.classList.remove('over');
+      if(zone.classList.contains('filled'))return;
+      const solId=e.dataTransfer.getData('text/plain');
+      if(solId===zone.dataset.answer){
+        zone.classList.add('filled');
+        const chip=document.getElementById('sol-'+solId);
+        if(chip){chip.classList.add('matched');chip.draggable=false;}
+        matched++;
+        document.getElementById('memoScore').textContent=`Собрано: ${matched} / 5`;
+        if(matched===memoPairs.length) unlockKey(2);
+      } else {
+        toast('❌ Не подходит. Попробуй другое.');
+      }
+    });
+    eqCol.appendChild(zone);
+  });
+
+  const shuffled=[...memoPairs].sort(()=>Math.random()-0.5);
+  shuffled.forEach(p=>{
+    const c=document.createElement('div');
+    c.className='card';c.id='sol-'+p.id;c.textContent=p.sol;
+    c.draggable=true;
+    c.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('text/plain',p.id);
+      c.classList.add('dragging');
+    });
+    c.addEventListener('dragend',()=>c.classList.remove('dragging'));
+    c.addEventListener('click',()=>{
+      if(c.classList.contains('matched'))return;
+      const target=[...eqCol.children].find(z=>z.dataset.answer===p.id && !z.classList.contains('filled'));
+      if(target){
+        target.classList.add('filled');
+        c.classList.add('matched');c.draggable=false;
+        matched++;
+        document.getElementById('memoScore').textContent=`Собрано: ${matched} / 5`;
+        if(matched===memoPairs.length) unlockKey(2);
+      }
+    });
+    solCol.appendChild(c);
+  });
+}
+
+/* ============================================================
+   ВРАТА 3 — СОРТИРОВКА (степени и формулы)
+   ============================================================ */
+const sortItems=[
+  {id:1, text:'a³ · a⁵',  bucket:'pow'},
+  {id:2, text:'(x²)⁴',    bucket:'pow'},
+  {id:3, text:'b⁷ / b³',  bucket:'pow'},
+  {id:4, text:'5⁰ + 3⁻¹', bucket:'pow'},
+  {id:5, text:'(a+b)²',   bucket:'frm'},
+  {id:6, text:'(x-3)(x+3)',bucket:'frm'},
+  {id:7, text:'(a-b)²',   bucket:'frm'},
+  {id:8, text:'|-7| + |3-5|', bucket:'mod'},
+  {id:9, text:'|x| = 5',  bucket:'mod'},
+  {id:10,text:'|a - b|',  bucket:'mod'}
+];
+
+function initSort(){
+  const stage=document.getElementById('stage');
+  stage.innerHTML=`
+    <div class="panel">
+      <h2>🌳 Врата 3. Лес Степеней</h2>
+      <p class="sub">Белки-формулки перепутали орехи. Разложи выражения по трём дуплам: степени, формулы, модуль.</p>
+      <div class="pool" id="pool"></div>
+      <div class="sort-area">
+        <div class="bucket" data-bucket="pow"><h5>🌿 Степени</h5><div class="bucket-body"></div></div>
+        <div class="bucket" data-bucket="frm"><h5>🧩 Формулы</h5><div class="bucket-body"></div></div>
+        <div class="bucket" data-bucket="mod"><h5>📏 Модуль</h5><div class="bucket-body"></div></div>
+      </div>
+      <div style="margin-top:16px">
+        <span id="sortScore" style="color:var(--gray)">Разложено: 0 / 10</span>
+      </div>
+    </div>
+  `;
+  const pool=document.getElementById('pool');
+  let placed=0;
+
+  const shuffled=[...sortItems].sort(()=>Math.random()-0.5);
+  shuffled.forEach(it=>{
+    const c=document.createElement('div');
+    c.className='chip';c.id='chip-'+it.id;c.textContent=it.text;
+    c.draggable=true;
+    c.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('text/plain',it.id);
+      c.classList.add('dragging');
+    });
+    c.addEventListener('dragend',()=>c.classList.remove('dragging'));
+    pool.appendChild(c);
+  });
+
+  document.querySelectorAll('.bucket').forEach(b=>{
+    b.addEventListener('dragover',e=>{e.preventDefault();b.classList.add('over');});
+    b.addEventListener('dragleave',()=>b.classList.remove('over'));
+    b.addEventListener('drop',e=>{
+      e.preventDefault();b.classList.remove('over');
+      const id=e.dataTransfer.getData('text/plain');
+      const item=sortItems.find(x=>x.id==id);
+      const chip=document.getElementById('chip-'+id);
+      if(!chip||chip.classList.contains('placed'))return;
+      if(item.bucket===b.dataset.bucket){
+        chip.classList.add('placed');
+        chip.draggable=false;
+        b.querySelector('.bucket-body').appendChild(chip);
+        placed++;
+        document.getElementById('sortScore').textContent=`Разложено: ${placed} / 10`;
+        if(placed===sortItems.length) unlockKey(3);
+      } else {
+        toast('❌ Это не сюда. Подумай ещё!');
+      }
+    });
+  });
+}
+
+/* ============================================================
+   ВРАТА 4 — ТЕКСТОВЫЕ ЗАДАЧИ
+   ============================================================ */
+const textTasks=[
+  {story:"У меня 120 орехов, у брата на 20 больше. Сколько орехов у брата?",
+   hint:"Брат = (120 + 20) / 2. Введи число.",
+   answer:70},
+  {story:"Я бежала туда 60 км/ч, обратно — 40 км/ч. Какова моя средняя скорость?",
+   hint:"Средняя скорость = 2·v1·v2 / (v1+v2). Введи число.",
+   answer:48},
+  {story:"Сейчас отец в 4 раза старше сына, через 5 лет — в 3 раза. Сколько лет сыну сейчас?",
+   hint:"Введи возраст сына (число).",
+   answer:10},
+  {story:"Товар подорожал на 20%, потом подешевел на 20%. На сколько % изменилась цена?",
+   hint:"Введи ответ числом (например, -4 или 4).",
+   answer:-4},
+  {story:"Первый выполнит работу за 6 дней, второй — за 3. За сколько дней вместе?",
+   hint:"Введи число дней.",
+   answer:2}
+];
+
+function initText(){
+  const stage=document.getElementById('stage');
+  stage.innerHTML=`
+    <div class="panel">
+      <h2>📖 Врата 4. Долина Историй</h2>
+      <p class="sub">Говорящие лисы-загадки не пропустят, пока ты не решишь их истории.</p>
+      <div id="textList"></div>
+      <div style="margin-top:16px">
+        <span id="textScore" style="color:var(--gray)">Решено: 0 / 5</span>
+      </div>
+    </div>
+  `;
+  const list=document.getElementById('textList');
+  let solved=0;
+
+  textTasks.forEach((t,i)=>{
+    const div=document.createElement('div');
+    div.className='story';
+    div.innerHTML=`
+      <div class="fox">🦊</div>
+      <p>«${t.story}»</p>
+      <div class="answer-row">
+        <input type="text" placeholder="Твой ответ..." id="ans-${i}">
+        <button class="btn" data-i="${i}">Проверить</button>
+      </div>
+      <div class="feedback" id="fb-${i}"></div>
+    `;
+    list.appendChild(div);
+  });
+
+  list.querySelectorAll('button').forEach(btn=>{
+    btn.onclick=()=>{
+      const i=+btn.dataset.i;
+      const input=document.getElementById('ans-'+i);
+      const fb=document.getElementById('fb-'+i);
+      const val=parseFloat(input.value.replace(',','.').replace('%',''));
+      if(isNaN(val)){
+        fb.textContent='Введите число.';fb.className='feedback err';return;
+      }
+      if(Math.abs(val-textTasks[i].answer)<0.01){
+        fb.textContent='✅ Верно! Лиса пропускает тебя.';fb.className='feedback ok';
+        input.disabled=true;btn.disabled=true;
+        solved++;
+        document.getElementById('textScore').textContent=`Решено: ${solved} / 5`;
+        if(solved===textTasks.length) unlockKey(4);
+      } else {
+        fb.textContent='❌ Пока нет. Подсказка: '+textTasks[i].hint;
+        fb.className='feedback err';
+      }
+    };
+  });
+}
+
+/* ============================================================
+   ВРАТА 5 — ГЕОМЕТРИЯ (интерактивный SVG + вопрос)
+   ============================================================ */
+const geoData=[
+  {task:"В треугольнике углы 50° и 60°. Найди третий угол (в градусах).",
+   svg:`<svg viewBox="0 0 300 220"><polygon points="150,20 40,190 260,190" fill="rgba(42,183,169,.15)" stroke="#2AB7A9" stroke-width="3"/><text x="150" y="15" fill="#F4A261" font-size="13" text-anchor="middle">A</text><text x="30" y="205" fill="#F4A261" font-size="13">B</text><text x="265" y="205" fill="#F4A261" font-size="13">C</text><text x="120" y="60" fill="#fff" font-size="12">50°</text><text x="170" y="185" fill="#fff" font-size="12">60°</text><text x="140" y="130" fill="#F4A261" font-size="14">?</text></svg>`,
+   answer:70},
+  {task:"Равнобедренный треугольник: угол при вершине 40°. Найди угол при основании (в градусах).",
+   svg:`<svg viewBox="0 0 300 220"><polygon points="150,20 40,190 260,190" fill="rgba(244,162,97,.15)" stroke="#F4A261" stroke-width="3"/><line x1="150" y1="20" x2="150" y2="190" stroke="#8AA8A5" stroke-dasharray="4"/><text x="150" y="15" fill="#F4A261" font-size="13" text-anchor="middle">A</text><text x="30" y="205" fill="#F4A261" font-size="13">B</text><text x="265" y="205" fill="#F4A261" font-size="13">C</text><text x="155" y="55" fill="#fff" font-size="12">40°</text><text x="100" y="185" fill="#fff" font-size="12">?</text><text x="195" y="185" fill="#fff" font-size="12">?</text></svg>`,
+   answer:70},
+  {task:"Смежные углы: один на 30° больше другого. Найди меньший угол (в градусах).",
+   svg:`<svg viewBox="0 0 300 200"><line x1="20" y1="140" x2="280" y2="140" stroke="#8AA8A5" stroke-width="3"/><line x1="150" y1="140" x2="220" y2="40" stroke="#2AB7A9" stroke-width="3"/><path d="M150 140 m -40 0 a 40 40 0 0 0 40 -30" fill="none" stroke="#F4A261" stroke-width="2"/><text x="115" y="130" fill="#fff" font-size="13">x</text><text x="195" y="90" fill="#fff" font-size="13">x+30°</text></svg>`,
+   answer:75},
+  {task:"Прямоугольный треугольник: один острый угол 35°. Найди второй острый угол (в градусах).",
+   svg:`<svg viewBox="0 0 300 220"><polygon points="60,190 60,40 260,190" fill="rgba(42,183,169,.15)" stroke="#2AB7A9" stroke-width="3"/><rect x="60" y="170" width="20" height="20" fill="none" stroke="#F4A261" stroke-width="2"/><text x="80" y="80" fill="#fff" font-size="13">35°</text><text x="215" y="180" fill="#F4A261" font-size="14">?</text></svg>`,
+   answer:55},
+  {task:"Стороны треугольника 5 и 8. Какова минимальная ЦЕЛАЯ длина третьей стороны?",
+   svg:`<svg viewBox="0 0 300 200"><polygon points="60,160 220,160 140,40" fill="rgba(244,162,97,.15)" stroke="#F4A261" stroke-width="3"/><text x="130" y="180" fill="#fff" font-size="13">8</text><text x="90" y="95" fill="#fff" font-size="13">5</text><text x="185" y="95" fill="#F4A261" font-size="13">? целое</text></svg>`,
+   answer:4}
+];
+
+function initGeo(){
+  const stage=document.getElementById('stage');
+  stage.innerHTML=`
+    <div class="panel">
+      <h2>🏔️ Врата 5. Горы Геометрии</h2>
+      <p class="sub">Весёлая Геометрия показывает чертежи. Ответь на вопросы — горы откроют тропу.</p>
+      <div id="geoList"></div>
+      <div style="margin-top:16px">
+        <span id="geoScore" style="color:var(--gray)">Решено: 0 / 5</span>
+      </div>
+    </div>
+  `;
+  const list=document.getElementById('geoList');
+  let solved=0;
+
+  geoData.forEach((g,i)=>{
+    const div=document.createElement('div');
+    div.className='q';
+    div.style.marginBottom='20px';
+    div.innerHTML=`
+      <div class="geo-wrap">
+        <div>${g.svg}</div>
+        <div>
+          <div class="title">${g.task}</div>
+          <div class="answer-row">
+            <input type="text" placeholder="Ответ (число)" id="geo-ans-${i}">
+            <button class="btn" data-i="${i}">Проверить</button>
+          </div>
+          <div class="feedback" id="geo-fb-${i}"></div>
+        </div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+
+  list.querySelectorAll('button').forEach(btn=>{
+    btn.onclick=()=>{
+      const i=+btn.dataset.i;
+      const input=document.getElementById('geo-ans-'+i);
+      const fb=document.getElementById('geo-fb-'+i);
+      const val=parseFloat(input.value.replace(',','.').replace('°',''));
+      if(isNaN(val)){fb.textContent='Введите число.';fb.className='feedback err';return;}
+      if(Math.abs(val-geoData[i].answer)<0.01){
+        fb.textContent='✅ Верно!';fb.className='feedback ok';
+        input.disabled=true;btn.disabled=true;
+        solved++;
+        document.getElementById('geoScore').textContent=`Решено: ${solved} / 5`;
+        if(solved===geoData.length) unlockKey(5);
+      } else {
+        fb.textContent='❌ Попробуй ещё. Подсказка: сумма углов треугольника = 180°, смежных = 180°, острых в прямоугольном = 90°.';
+        fb.className='feedback err';
+      }
+    };
+  });
+}
+
+/* ============================================================
+   ВРАТА 6 — ВЕРОЯТНОСТЬ (кубик + статистика)
+   ============================================================ */
+function initDice(){
+  const stage=document.getElementById('stage');
+  stage.innerHTML=`
+    <div class="panel">
+      <h2>🎲 Врата 6. Озеро Вероятностей</h2>
+      <p class="sub">Котэ-Косинус предлагает проверить удачу! Брось кубик 20 раз и посмотри, как часто выпадает чётное.</p>
+
+      <div class="dice-area">
+        <div class="die" id="die">🎲</div>
+        <div>
+          <button class="btn gold" id="rollOnce">Бросить 1 раз</button>
+          <button class="btn" id="rollMany">Бросить 20 раз</button>
+          <button class="btn ghost" id="rollReset">Сброс</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="val" id="statTotal">0</div><div class="lbl">Всего бросков</div></div>
+        <div class="stat"><div class="val" id="statEven">0</div><div class="lbl">Чётных</div></div>
+        <div class="stat"><div class="val" id="statFreq">—</div><div class="lbl">Частота чётных</div></div>
+        <div class="stat"><div class="val" id="statTheory">1/2</div><div class="lbl">Теория</div></div>
+      </div>
+
+      <div style="margin-top:22px;padding:16px;background:rgba(255,255,255,.05);border-radius:14px">
+        <div class="title" style="margin-bottom:10px">Задача на вероятность:</div>
+        <p style="margin-bottom:10px">Бросают кубик. Какова вероятность, что выпадет число больше 4? (ответь десятичной дробью, например 0.33)</p>
+        <div class="answer-row">
+          <input type="text" placeholder="Например, 0.33" id="diceAns">
+          <button class="btn" id="diceCheck">Проверить</button>
+        </div>
+        <div class="feedback" id="diceFb"></div>
+      </div>
+    </div>
+  `;
+  let total=0, even=0;
+  const die=document.getElementById('die');
+
+  function update(){
+    document.getElementById('statTotal').textContent=total;
+    document.getElementById('statEven').textContent=even;
+    document.getElementById('statFreq').textContent=total?(even/total).toFixed(2):'—';
+  }
+  function roll(){
+    die.classList.remove('rolling');void die.offsetWidth;
+    die.classList.add('rolling');
+    const v=Math.ceil(Math.random()*6);
+    die.textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][v-1];
+    total++; if(v%2===0) even++;
+    update();
+  }
+  document.getElementById('rollOnce').onclick=roll;
+  document.getElementById('rollMany').onclick=()=>{
+    for(let i=0;i<20;i++)setTimeout(roll,i*80);
+  };
+  document.getElementById('rollReset').onclick=()=>{total=0;even=0;die.textContent='🎲';update();};
+
+  document.getElementById('diceCheck').onclick=()=>{
+    const inp=document.getElementById('diceAns');
+    const fb=document.getElementById('diceFb');
+    const v=parseFloat(inp.value.replace(',','.'));
+    // P(>4) = 2/6 = 1/3 ≈ 0.333
+    if(!isNaN(v) && Math.abs(v-1/3)<0.02){
+      fb.textContent='✅ Верно! P = 2/6 = 1/3 ≈ 0,33.';
+      fb.className='feedback ok';
+      unlockKey(6);
+    } else {
+      fb.textContent='❌ Подсказка: чисел больше 4 на кубике — два (5 и 6). Всего — шесть.';
+      fb.className='feedback err';
+    }
+  };
+}
+
+/* ============================================================
+   ФИНАЛ
+   ============================================================ */
+function showFinal(){
+  const stage=document.getElementById('stage');
+  stage.innerHTML=`
+    <div class="final">
+      <div class="trophy">🏆</div>
+      <h2>Живой Лабиринт спасён!</h2>
+      <p>Ты собрал все 6 ключей и получил звание <b style="color:var(--gold)">«Хранитель Живого Лабиринта»</b>!</p>
+      <p style="font-size:14px">Профессор Мягкий гордится тобой. Волшебные звери вернулись домой.</p>
+      <button class="btn gold" onclick="window.print()">🖨️ Распечатать сертификат</button>
+    </div>
+  `;
+  window.scrollTo({top:300,behavior:'smooth'});
+}
+
+/* ============================================================
+   СТАРТ
+   ============================================================ */
+renderMap();
+</script>
+</body>
+</html>
